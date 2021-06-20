@@ -46,3 +46,29 @@ async def analyseDOGS(image_file_read: bytes = File(...)):
     model.eval()
     prediction=predict_new_image(image, model, threshold=0.1, device='cpu')
     return prediction
+
+
+@app.post("/predictCATs")
+async def analyseCATs(image_file_read: bytes = File(...)):
+    model = models.vgg16(pretrained=True)
+
+    classifier = nn.Sequential(OrderedDict([
+
+        ('fc1', nn.Linear(25088, 500)),
+        ('relu', nn.ReLU()),
+        ('drop1', nn.Dropout(p=0.95)),
+        ('fc2', nn.Linear(500, 133)),
+        ('output', nn.LogSoftmax(dim=1))
+    ]))
+
+    model.classifier = classifier
+    model.load_state_dict(torch.load(os.getcwd() + "/models/generator_124.pth", map_location=torch.device('cpu')))
+    file = base64.b64encode(image_file_read)
+    jpg_original = base64.b64decode(file)
+    # jpg_as_np = np.frombuffer(jpg_original, dtype=np.uint8)
+    # original_image = cv2.imdecode(jpg_as_np, flags=1)
+    image = Image.open(io.BytesIO(jpg_original))
+    model.to('cpu')
+    model.eval()
+    prediction=predict_new_image(image, model, threshold=0.1, device='cpu')
+    return prediction
